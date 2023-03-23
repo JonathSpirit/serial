@@ -1,92 +1,101 @@
-#if defined(_WIN32)
-
-/*
- * Copyright (c) 2014 Craig Lilley <cralilley@gmail.com>
- * This software is made available under the terms of the MIT licence.
- * A copy of the licence can be obtained from:
- * http://opensource.org/licenses/MIT
+/* 
+ * Copyright (c) 2023 Guillaume Guillet
+ * Original from :
+ *   Copyright (c) 2012 William Woodall, John Harrison, Craig Lilley
+ *   https://github.com/wjwwood/serial
  */
+
+#ifdef _WIN32
 
 #include "serial/serial.hpp"
 #include <tchar.h>
+
+#define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
+    #define NOMINMAX
+#endif
 #include <windows.h>
+
 #include <setupapi.h>
 #include <initguid.h>
 #include <devguid.h>
-#include <cstring>
 
-using serial::PortInfo;
-using std::vector;
-using std::string;
-
-static const DWORD port_name_max_length = 256;
-static const DWORD friendly_name_max_length = 256;
-static const DWORD hardware_id_max_length = 256;
+constexpr DWORD port_name_max_length = 256;
+constexpr DWORD friendly_name_max_length = 256;
+constexpr DWORD hardware_id_max_length = 256;
 
 // Convert a wide Unicode string to an UTF8 string
 std::string utf8_encode(const std::wstring &wstr)
 {
-	int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
-	std::string strTo( size_needed, 0 );
-	WideCharToMultiByte                  (CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+	int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), 
+                                          NULL, 0, NULL, NULL);
+	std::string strTo(size_needed, 0);
+	WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), 
+                        &strTo[0], size_needed, NULL, NULL);
 	return strTo;
 }
 
-vector<PortInfo>
-serial::list_ports()
+std::vector<serial::PortInfo> serial::list_ports()
 {
-	vector<PortInfo> devices_found;
+	std::vector<PortInfo> devices_found;
 
 	HDEVINFO device_info_set = SetupDiGetClassDevs(
-		(const GUID *) &GUID_DEVCLASS_PORTS,
-		NULL,
-		NULL,
-		DIGCF_PRESENT);
+            static_cast<const GUID *>(&GUID_DEVCLASS_PORTS),
+            NULL,
+            NULL,
+            DIGCF_PRESENT);
 
 	unsigned int device_info_set_index = 0;
 	SP_DEVINFO_DATA device_info_data;
 
 	device_info_data.cbSize = sizeof(SP_DEVINFO_DATA);
 
-	while(SetupDiEnumDeviceInfo(device_info_set, device_info_set_index, &device_info_data))
+	while (SetupDiEnumDeviceInfo(device_info_set, device_info_set_index, &device_info_data))
 	{
 		device_info_set_index++;
 
 		// Get port name
 
 		HKEY hkey = SetupDiOpenDevRegKey(
-			device_info_set,
-			&device_info_data,
-			DICS_FLAG_GLOBAL,
-			0,
-			DIREG_DEV,
-			KEY_READ);
+                device_info_set,
+                &device_info_data,
+                DICS_FLAG_GLOBAL,
+                0,
+                DIREG_DEV,
+                KEY_READ);
 
 		TCHAR port_name[port_name_max_length];
 		DWORD port_name_length = port_name_max_length;
 
 		LONG return_code = RegQueryValueEx(
-					hkey,
-					_T("PortName"),
-					NULL,
-					NULL,
-					(LPBYTE)port_name,
-					&port_name_length);
+                hkey,
+                _T("PortName"),
+                NULL,
+                NULL,
+                reinterpret_cast<LPBYTE>(port_name),
+                &port_name_length);
 
 		RegCloseKey(hkey);
 
-		if(return_code != EXIT_SUCCESS)
-			continue;
+		if (return_code != EXIT_SUCCESS)
+        {
+            continue;
+        }
 
 		if(port_name_length > 0 && port_name_length <= port_name_max_length)
-			port_name[port_name_length-1] = '\0';
+        {
+            port_name[port_name_length - 1] = '\0';
+        }
 		else
-			port_name[0] = '\0';
+        {
+            port_name[0] = '\0';
+        }
 
 		// Ignore parallel ports
-
 		if(_tcsstr(port_name, _T("LPT")) != NULL)
-			continue;
+        {
+            continue;
+        }
 
 		// Get port friendly name
 
@@ -103,9 +112,13 @@ serial::list_ports()
 					&friendly_name_actual_length);
 
 		if(got_friendly_name == TRUE && friendly_name_actual_length > 0)
-			friendly_name[friendly_name_actual_length-1] = '\0';
+        {
+            friendly_name[friendly_name_actual_length - 1] = '\0';
+        }
 		else
-			friendly_name[0] = '\0';
+        {
+            friendly_name[0] = '\0';
+        }
 
 		// Get hardware ID
 
@@ -122,9 +135,13 @@ serial::list_ports()
 					&hardware_id_actual_length);
 
 		if(got_hardware_id == TRUE && hardware_id_actual_length > 0)
-			hardware_id[hardware_id_actual_length-1] = '\0';
+        {
+            hardware_id[hardware_id_actual_length - 1] = '\0';
+        }
 		else
-			hardware_id[0] = '\0';
+        {
+            hardware_id[0] = '\0';
+        }
 
 		#ifdef UNICODE
 			std::string portName = utf8_encode(port_name);
@@ -149,4 +166,4 @@ serial::list_ports()
 	return devices_found;
 }
 
-#endif // #if defined(_WIN32)
+#endif // #ifdef _WIN32
