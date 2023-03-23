@@ -401,7 +401,7 @@ std::string Serial::SerialImpl::getPort() const
     return std::string(port_.begin(), port_.end());
 }
 
-void Serial::SerialImpl::setTimeout(serial::Timeout &timeout)
+void Serial::SerialImpl::setTimeout(const serial::Timeout &timeout)
 {
     timeout_ = timeout;
     if (is_open_)

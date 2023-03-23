@@ -95,7 +95,7 @@ public:
     void setPort(const std::string &port);
     std::string getPort() const;
     
-    void setTimeout(Timeout &timeout);
+    void setTimeout(const Timeout &timeout);
     Timeout getTimeout() const;
     
     void setBaudrate(uint32_t baudrate);
