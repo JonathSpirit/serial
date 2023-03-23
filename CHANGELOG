@@ -1,6 +1,22 @@
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package serial
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2.0.0 (xxx)
+------------------
+* C++ version to C++11
+* Remove "alloca" usage
+* Add WIN32_LEAN_AND_MEAN
+* Add NOMINMAX
+* Rename *.cc, *.h files to *.cpp, *.hpp
+* Refactor serial
+           win
+           list_ports_win
+* Update Doxyfile to 1.9.6
+* Remove Catkin dependency
+* Remove Python dependency
+* Add missing "namespace serial" scopes
+
+
+************************************************************
+At this point, this is from https://github.com/wjwwood/serial
+*************************************************************
 
 1.2.1 (2015-04-21)
 ------------------
