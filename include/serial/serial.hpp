@@ -34,12 +34,9 @@
 
 #include <limits>
 #include <vector>
-#include <string>
-#include <cstring>
 #include <sstream>
-#include <exception>
-#include <stdexcept>
 #include <cstdint>
+#include <cstring>
 
 #define THROW(exceptionClass_, message_) throw exceptionClass_(__FILE__, __LINE__, (message_) )
 
