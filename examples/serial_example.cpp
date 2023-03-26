@@ -22,9 +22,20 @@
 
 // OS Specific sleep
 #ifdef _WIN32
-#include <windows.h>
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+
+    #ifndef NOMINMAX
+        #define NOMINMAX
+        #include <windows.h>
+    #undef NOMINMAX
+
+    #else
+        #include <windows.h>
+    #endif
 #else
-#include <unistd.h>
+    #include <unistd.h>
 #endif
 
 #include "serial/serial.hpp"
