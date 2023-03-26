@@ -45,17 +45,21 @@
     #include <IOKit/serial/ioss.h>
 #endif
 
+#define INT_10E3 1000
+#define INT_10E6 1000000
+#define INT_10E9 1000000000
+
 namespace serial
 {
 
-MillisecondTimer::MillisecondTimer(const uint32_t millis) :
+MillisecondTimer::MillisecondTimer(uint32_t millis) :
         expiry(timespec_now())
 {
-    int64_t tv_nsec = expiry.tv_nsec + (millis * 1e6);
-    if (tv_nsec >= 1e9)
+    int64_t tv_nsec = expiry.tv_nsec + (millis * INT_10E6);
+    if (tv_nsec >= INT_10E9)
     {
-        int64_t sec_diff = tv_nsec / static_cast<int> (1e9);
-        expiry.tv_nsec = tv_nsec % static_cast<int>(1e9);
+        int64_t sec_diff = tv_nsec / INT_10E9;
+        expiry.tv_nsec = tv_nsec % INT_10E9;
         expiry.tv_sec += sec_diff;
     }
     else
@@ -64,11 +68,11 @@ MillisecondTimer::MillisecondTimer(const uint32_t millis) :
     }
 }
 
-int64_t MillisecondTimer::remaining()
+int64_t MillisecondTimer::remaining() const
 {
     timespec now(timespec_now());
-    int64_t millis = (expiry.tv_sec - now.tv_sec) * 1e3;
-    millis += (expiry.tv_nsec - now.tv_nsec) / 1e6;
+    int64_t millis = (expiry.tv_sec - now.tv_sec) * INT_10E3;
+    millis += (expiry.tv_nsec - now.tv_nsec) / INT_10E6;
     return millis;
 }
 
@@ -92,12 +96,12 @@ timespec MillisecondTimer::timespec_now()
 timespec timespec_from_ms(const uint32_t millis)
 {
     timespec time;
-    time.tv_sec = millis / 1e3;
-    time.tv_nsec = (millis - (time.tv_sec * 1e3)) * 1e6;
+    time.tv_sec = millis / INT_10E3;
+    time.tv_nsec = (millis - (time.tv_sec * INT_10E3)) * INT_10E6;
     return time;
 }
 
-Serial::SerialImpl::SerialImpl (const   std::string &port, uint32_t baudrate,
+Serial::SerialImpl::SerialImpl (const std::string &port, uint32_t baudrate,
                                 ByteSizes bytesize,
                                 Parity parity, StopBits stopbits,
                                 FlowControls flowcontrol) :
@@ -498,14 +502,14 @@ void Serial::SerialImpl::reconfigurePort()
     }
 
     // Update byte_time_ based on the new settings.
-    uint32_t bit_time_ns = 1e9 / baudrate_;
+    uint32_t bit_time_ns = INT_10E9 / baudrate_;
     byte_time_ns_ = bit_time_ns * (1 + (int)bytesize_ + (int)parity_ + (int)stopbits_);
 
     // Compensate for the stopbits_one_point_five enum being equal to int 3,
     // and not 1.5.
     if (stopbits_ == StopBits::ONE_POINT_FIVE)
     {
-        byte_time_ns_ += ((1.5 - (double)StopBits::ONE_POINT_FIVE) * bit_time_ns);
+        byte_time_ns_ += static_cast<uint32_t>((1.5f - static_cast<float>(StopBits::ONE_POINT_FIVE)) * static_cast<float>(bit_time_ns)); ///TODO: Stop doing whatever this does
     }
 }
 

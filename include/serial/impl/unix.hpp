@@ -44,12 +44,12 @@ namespace serial
 class MillisecondTimer
 {
 public:
-  MillisecondTimer(const uint32_t millis);         
-  int64_t remaining();
+    explicit MillisecondTimer(uint32_t millis);
+    int64_t remaining() const;
 
 private:
-  static timespec timespec_now();
-  timespec expiry;
+    static timespec timespec_now();
+    timespec expiry;
 };
 
 class Serial::SerialImpl
