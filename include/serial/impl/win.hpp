@@ -59,8 +59,8 @@ public:
                Parity parity,
                StopBits stopbits,
                FlowControls flowcontrol);
-    
-    ~SerialImpl();
+
+    virtual ~SerialImpl();
 
     void open();
     void close();

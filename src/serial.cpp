@@ -13,7 +13,7 @@
 #ifdef _WIN32
     #include "serial/impl/win.hpp"
 #else
-    #include "serial/impl/unix.h"
+    #include "serial/impl/unix.hpp"
 #endif
 
 namespace serial

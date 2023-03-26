@@ -1,14 +1,10 @@
 /*!
- * \file serial/impl/unix.h
- * \author  William Woodall <wjwwood@gmail.com>
- * \author  John Harrison <ash@greaterthaninfinity.com>
- * \version 0.1
- *
- * \section LICENSE
- *
  * The MIT License
  *
- * Copyright (c) 2012 William Woodall, John Harrison
+ * Copyright (c) 2023 Guillaume Guillet
+ * Original from :
+ *   Copyright (c) 2012 William Woodall, John Harrison
+ *   https://github.com/wjwwood/serial
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -32,28 +28,21 @@
  *
  * This provides a unix based pimpl for the Serial class. This implementation is
  * based off termios.h and uses select for multiplexing the IO ports.
- *
  */
 
-#if !defined(_WIN32)
+#ifndef _WIN32
 
-#ifndef SERIAL_IMPL_UNIX_H
-#define SERIAL_IMPL_UNIX_H
+#ifndef SERIAL_IMPL_UNIX_HPP_INCLUDED
+#define SERIAL_IMPL_UNIX_HPP_INCLUDED
 
-#include "serial/serial.h"
-
+#include "serial/serial.hpp"
 #include <pthread.h>
 
-namespace serial {
+namespace serial
+{
 
-using std::size_t;
-using std::string;
-using std::invalid_argument;
-
-using serial::SerialException;
-using serial::IOException;
-
-class MillisecondTimer {
+class MillisecondTimer
+{
 public:
   MillisecondTimer(const uint32_t millis);         
   int64_t remaining();
@@ -63,159 +52,104 @@ private:
   timespec expiry;
 };
 
-class serial::Serial::SerialImpl {
+class Serial::SerialImpl
+{
 public:
-  SerialImpl (const string &port,
-              unsigned long baudrate,
-              bytesize_t bytesize,
-              parity_t parity,
-              stopbits_t stopbits,
-              flowcontrol_t flowcontrol);
+    SerialImpl(const std::string &port,
+               uint32_t baudrate,
+               ByteSizes bytesize,
+               Parity parity,
+               StopBits stopbits,
+               FlowControls flowcontrol);
 
-  virtual ~SerialImpl ();
+    virtual ~SerialImpl();
 
-  void
-  open ();
+    void open();
+    void close();
+    bool isOpen() const;
 
-  void
-  close ();
+    std::size_t available();
 
-  bool
-  isOpen () const;
+    bool waitReadable(uint32_t timeout);
+    void waitByteTimes(std::size_t count);
 
-  size_t
-  available ();
+    std::size_t read(uint8_t *buf, std::size_t size = 1);
+    std::size_t write(const uint8_t *data, std::size_t length);
 
-  bool
-  waitReadable (uint32_t timeout);
+    void flush();
 
-  void
-  waitByteTimes (size_t count);
+    void flushInput();
+    void flushOutput();
 
-  size_t
-  read (uint8_t *buf, size_t size = 1);
+    void sendBreak(int duration);
+    void setBreak(bool level);
 
-  size_t
-  write (const uint8_t *data, size_t length);
+    void setRTS(bool level);
+    void setDTR(bool level);
 
-  void
-  flush ();
+    bool waitForChange();
 
-  void
-  flushInput ();
+    bool getCTS();
+    bool getDSR();
+    bool getRI();
+    bool getCD();
 
-  void
-  flushOutput ();
+    void setPort(const std::string &port);
+    std::string getPort() const;
 
-  void
-  sendBreak (int duration);
+    void setTimeout(const Timeout &timeout);
+    Timeout getTimeout() const;
 
-  void
-  setBreak (bool level);
+    void setBaudrate(uint32_t baudrate);
+    uint32_t getBaudrate() const;
 
-  void
-  setRTS (bool level);
+    void setBytesize(ByteSizes bytesize);
 
-  void
-  setDTR (bool level);
+    ByteSizes getBytesize() const;
 
-  bool
-  waitForChange ();
+    void setParity(Parity parity);
+    Parity getParity() const;
 
-  bool
-  getCTS ();
+    void setStopbits(StopBits stopbits);
+    StopBits getStopbits() const;
 
-  bool
-  getDSR ();
+    void setFlowcontrol(FlowControls flowcontrol);
+    FlowControls getFlowcontrol() const;
 
-  bool
-  getRI ();
+    void readLock();
+    void readUnlock();
 
-  bool
-  getCD ();
-
-  void
-  setPort (const string &port);
-
-  string
-  getPort () const;
-
-  void
-  setTimeout (const Timeout &timeout);
-
-  Timeout
-  getTimeout () const;
-
-  void
-  setBaudrate (unsigned long baudrate);
-
-  unsigned long
-  getBaudrate () const;
-
-  void
-  setBytesize (bytesize_t bytesize);
-
-  bytesize_t
-  getBytesize () const;
-
-  void
-  setParity (parity_t parity);
-
-  parity_t
-  getParity () const;
-
-  void
-  setStopbits (stopbits_t stopbits);
-
-  stopbits_t
-  getStopbits () const;
-
-  void
-  setFlowcontrol (flowcontrol_t flowcontrol);
-
-  flowcontrol_t
-  getFlowcontrol () const;
-
-  void
-  readLock ();
-
-  void
-  readUnlock ();
-
-  void
-  writeLock ();
-
-  void
-  writeUnlock ();
+    void writeLock();
+    void writeUnlock();
 
 protected:
-  void reconfigurePort ();
+    void reconfigurePort();
 
 private:
-  string port_;               // Path to the file descriptor
-  int fd_;                    // The current file descriptor
+    std::string port_; // Path to the file descriptor
+    int fd_; // The current file descriptor
 
-  bool is_open_;
-  bool xonxoff_;
-  bool rtscts_;
+    bool is_open_;
+    bool xonxoff_;
+    bool rtscts_;
 
-  Timeout timeout_;           // Timeout for read operations
-  unsigned long baudrate_;    // Baudrate
-  uint32_t byte_time_ns_;     // Nanoseconds to transmit/receive a single byte
+    Timeout timeout_; // Timeout for read operations
+    uint32_t baudrate_; // Baudrate
+    uint32_t byte_time_ns_; // Nanoseconds to transmit/receive a single byte
 
-  parity_t parity_;           // Parity
-  bytesize_t bytesize_;       // Size of the bytes
-  stopbits_t stopbits_;       // Stop Bits
-  flowcontrol_t flowcontrol_; // Flow Control
+    Parity parity_; // Parity
+    ByteSizes bytesize_; // Size of the bytes
+    StopBits stopbits_; // Stop Bits
+    FlowControls flowcontrol_; // Flow Control
 
-  // Mutex used to lock the read functions
-  pthread_mutex_t read_mutex;
-  // Mutex used to lock the write functions
-  pthread_mutex_t write_mutex;
+    // Mutex used to lock the read functions
+    pthread_mutex_t read_mutex;
+    // Mutex used to lock the write functions
+    pthread_mutex_t write_mutex;
 };
 
-}
+}//end namespace serial
 
-#endif // SERIAL_IMPL_UNIX_H
+#endif // SERIAL_IMPL_UNIX_HPP_INCLUDED
 
-#endif // !defined(_WIN32)
+#endif //ifnef _WIN32
